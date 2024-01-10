@@ -1,6 +1,6 @@
 import { RangeInput, Box, Text } from "grommet";
 
-const Slider = ({ parameter, setParameter, controlName }) => {
+const Slider = ({ parameter, setParameter, minValue, maxValue, stepValue, controlName }) => {
 
     const handleSliderChange = (event) => {
         console.log("slider at" + event)
@@ -8,16 +8,20 @@ const Slider = ({ parameter, setParameter, controlName }) => {
     }
 
     
-    return ( <Box align="center" width="small" margin="medium">
-<Text margin={{ bottom: "small" }}>{controlName}</Text>
+    return ( <Box  align="center" direction="row" width="small" margin="medium">
+<Text margin={{ right: "small" }}>{controlName}</Text>
+<Text weight={300}>{parameter}</Text>
     <RangeInput
+    string={"control"}
        title="Set Kick Pitch"
-       min={2}
-       max={150}
-       step={0.5}
+       min={minValue}
+       max={maxValue}
+       step={stepValue}
        value={parameter}
+       color={"#FFF"}
        onChange={handleSliderChange}
      /> 
+   <Text weight={300}>{maxValue}</Text>
          </Box> );
 }
  
