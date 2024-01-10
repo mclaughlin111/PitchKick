@@ -5,7 +5,30 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: white;
+  background-color: #181c21;
+ 
 }
+
+
+h1 {
+  margin: calc(10px + 2vmin);
+
+  font-size: calc(10px + 2vmin);
+  align-content: flex-start;
+}
+
+.synthContainer {
+  margin-top: 25vh;
+  display: flex;
+flex-direction: column;
+flex-wrap: wrap;
+align-items: center;
+scale: 2;
+  
+}
+
+
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
