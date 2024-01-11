@@ -1,4 +1,4 @@
-# Pitch Kick
+# [PitchKick](https://tommcl.co.uk/pitchkick/)
 
 [PitchKick](https://tommcl.co.uk/pitchkick/)
 
