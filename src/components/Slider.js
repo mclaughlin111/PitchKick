@@ -8,9 +8,9 @@ const Slider = ({ parameter, setParameter, minValue, maxValue, stepValue, contro
     }
 
     
-    return ( <Box  align="center" direction="row" width="small" margin="medium">
+    return ( <Box  align="center" direction="row"  margin={{ bottom: "small", top: "medium"}}>
 <Text margin={{ right: "small" }}>{controlName}</Text>
-<Text weight={300}>{parameter}</Text>
+<Text weight={300}   margin={{ right: "medium" }}>{parameter}</Text>
     <RangeInput
     string={"control"}
        title="Set Kick Pitch"
@@ -21,7 +21,7 @@ const Slider = ({ parameter, setParameter, minValue, maxValue, stepValue, contro
        color={"#FFF"}
        onChange={handleSliderChange}
      /> 
-   <Text weight={300}>{maxValue}</Text>
+   <Text weight={300} margin={{ left: "small" }}>{maxValue}</Text>
          </Box> );
 }
  
