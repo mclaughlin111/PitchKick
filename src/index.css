@@ -7,7 +7,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: white;
   background-color: #181c21;
- 
+
 }
 
 
@@ -21,16 +21,47 @@ h1 {
 .synthContainer {
   margin-top: 25vh;
   display: flex;
-flex-direction: column;
-flex-wrap: wrap;
-align-items: center;
-scale: 2;
-  
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  scale: 2;
+
 }
 
+.parameter {
+  box-sizing: border-box;
+  width: 9em;
+  /* Set a fixed width or adjust as needed */
+  overflow: hidden;
+  /* Hide overflow content */
+  white-space: nowrap;
+  /* Prevent text from wrapping */
+  text-overflow: ellipsis;
+  /* Show ellipsis (...) for overflow text */
 
+}
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+[class*="StyledCheckBox"] {
+  border-color: white !important;
+  margin-right: .5px;
+
+
+}
+
+
+@media screen and (max-width: 600px) {
+  .synthContainer {
+    margin-top: 1vh;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    scale: 1;
+    justify-content: flex-end;
+    flex-direction: column;
+  }
 }

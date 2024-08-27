@@ -1,7 +1,13 @@
-import Kick from '../components/Kick';
+import Kick from "../components/Kick";
+import Sequencer from "../components/Sequencer";
 
 const SynthContainer = () => {
-    return (<Kick />);
-}
- 
+  return (
+    <>
+      <Kick />
+      <Sequencer />
+    </>
+  );
+};
+
 export default SynthContainer;
