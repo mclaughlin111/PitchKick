@@ -13,18 +13,17 @@ body {
 
 h1 {
   margin: calc(10px + 2vmin);
-
   font-size: calc(10px + 2vmin);
   align-content: flex-start;
 }
 
 .synthContainer {
-  margin-top: 25vh;
+  margin-top: 20vh;
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
   align-items: center;
-  scale: 2;
+  scale: 1.5;
 
 }
 

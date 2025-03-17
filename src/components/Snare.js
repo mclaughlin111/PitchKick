@@ -10,7 +10,7 @@ import Slider from "./Slider";
 import { Box, Button, Tip } from "grommet";
 
 // Use forwardRef to allow the parent to access internal methods.
-const Kick = React.forwardRef((props, ref) => {
+const Snare = React.forwardRef((props, ref) => {
   const [isKeyPressed, setIsKeyPressed] = useState(false);
   const [pitch, setPitch] = useState(20);
   const [length, setLength] = useState(1);
@@ -39,13 +39,13 @@ const Kick = React.forwardRef((props, ref) => {
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.code === "KeyK" && !isKeyPressed) {
+      if (event.code === "KeyS" && !isKeyPressed) {
         setIsKeyPressed(true);
         playSynth();
       }
     };
     const handleKeyUp = (event) => {
-      if (event.code === "KeyK") {
+      if (event.code === "KeyS") {
         setIsKeyPressed(false);
       }
     };
@@ -62,11 +62,16 @@ const Kick = React.forwardRef((props, ref) => {
     <Box align="center" pad="medium" responsive>
       <Tip
         dropProps={{ align: { left: "right" } }}
-        content={"Trigger with K"}
+        content={"Trigger with S"}
         plain
         pad="small"
       >
-        <Button primary label="Kick" onClick={() => playSynth()} size="small" />
+        <Button
+          primary
+          label="Snare"
+          onClick={() => playSynth()}
+          size="small"
+        />
       </Tip>
       <Slider
         parameter={pitch}
@@ -96,4 +101,4 @@ const Kick = React.forwardRef((props, ref) => {
   );
 });
 
-export default Kick;
+export default Snare;
