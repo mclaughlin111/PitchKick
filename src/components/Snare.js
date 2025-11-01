@@ -9,30 +9,57 @@ import * as Tone from "tone";
 import Slider from "./Slider";
 import { Box, Button, Tip } from "grommet";
 
-// Use forwardRef to allow the parent to access internal methods.
 const Snare = React.forwardRef((props, ref) => {
   const [isKeyPressed, setIsKeyPressed] = useState(false);
-  const [pitch, setPitch] = useState(20);
-  const [length, setLength] = useState(1);
-  const [decay, setDecay] = useState(0.2);
+  const [pitch, setPitch] = useState(100);
+  const [decay, setDecay] = useState(0.1);
+  const [noiseLevel, setNoiseLevel] = useState(0.5);
 
-  // Create the synth once using useRef so it isn't re-instantiated on every render.
-  const synthRef = useRef(new Tone.MembraneSynth().toDestination());
+  // Create both synths using useRef
+  const membraneRef = useRef(
+    new Tone.MembraneSynth({
+      pitchDecay: 0.05,
+      octaves: 10,
+      oscillator: { type: "sine" },
+      envelope: {
+        attack: 0.001,
+        decay: 0.2,
+        sustain: 0,
+      },
+    }).toDestination()
+  );
+
+  const noiseRef = useRef(
+    new Tone.NoiseSynth({
+      noise: {
+        type: "white",
+      },
+      envelope: {
+        attack: 0.005,
+        decay: 0.1,
+        sustain: 0,
+      },
+    }).toDestination()
+  );
 
   const playSynth = useCallback(
     (time) => {
-      Tone.start(); // Ensure the AudioContext is resumed.
-      console.log("kick triggered");
-      // Trigger the synth using the scheduled time from Tone.js if available.
-      synthRef.current.triggerAttackRelease(pitch, length, time);
-      // Optionally adjust synth settings:
-      synthRef.current.octaves = 8;
-      synthRef.current.pitchDecay = decay;
+      Tone.start();
+
+      // Set the noise synth volume
+      noiseRef.current.volume.value = Tone.gainToDb(noiseLevel);
+
+      // Set membrane synth decay
+      membraneRef.current.envelope.decay = decay;
+      noiseRef.current.envelope.decay = decay * 0.5;
+
+      // Trigger both synths
+      membraneRef.current.triggerAttackRelease(pitch, "8n", time);
+      noiseRef.current.triggerAttackRelease("8n", time);
     },
-    [pitch, length, decay]
+    [pitch, decay, noiseLevel]
   );
 
-  // Expose playSynth to the parent component via the ref.
   useImperativeHandle(ref, () => ({
     playSynth,
   }));
@@ -76,8 +103,8 @@ const Snare = React.forwardRef((props, ref) => {
       <Slider
         parameter={pitch}
         setParameter={setPitch}
-        minValue={2}
-        maxValue={200}
+        minValue={10}
+        maxValue={150}
         stepValue={1}
         controlName="Pitch"
       />
@@ -86,16 +113,16 @@ const Snare = React.forwardRef((props, ref) => {
         setParameter={setDecay}
         minValue={0.01}
         maxValue={0.5}
-        stepValue={0.05}
+        stepValue={0.01}
         controlName="Decay"
       />
       <Slider
-        parameter={length}
-        setParameter={setLength}
-        minValue={0.5}
+        parameter={noiseLevel}
+        setParameter={setNoiseLevel}
+        minValue={0}
         maxValue={1}
         stepValue={0.01}
-        controlName="Length"
+        controlName="Noise Level"
       />
     </Box>
   );

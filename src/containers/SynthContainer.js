@@ -1,20 +1,42 @@
 import React, { useState, useRef, useEffect } from "react";
 import Kick from "../components/Kick";
+import Snare from "../components/Snare";
 import Sequencer from "../components/Sequencer";
 import { Start } from "../components/Start";
 import * as Tone from "tone";
-import Snare from "../components/Snare";
+import { Box, Grommet } from "grommet";
+import { SelectBPM } from "../components/SelectBPM";
 
 const SynthContainer = () => {
   const [playing, setPlaying] = useState(false);
-  const [kickPattern, setKickPattern] = useState([1, 0, 1, 0]);
-  const [snarePattern, setSnarePattern] = useState([0, 0, 1, 0]);
+  const [BPM, setBPM] = useState(120);
+  const [kickPattern, setKickPattern] = useState([1, 0, 0, 0, 1, 0, 0, 0]);
+  const [snarePattern, setSnarePattern] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
+  const [activeStep, setActiveStep] = useState(0);
 
   const kickRef = useRef(null);
   const snareRef = useRef(null);
 
+  const custom = {
+    checkBox: {
+      check: {
+        extend: `
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `,
+      },
+      icon: {
+        size: "10px", // Adjust size if needed
+      },
+      toggle: {
+        background: "none",
+      },
+    },
+  };
+
+  // Create Tone.Sequence for kick and snare as before.
   useEffect(() => {
-    // Create a sequence for the kick
     const kickSeq = new Tone.Sequence(
       (time, step) => {
         console.log(`Kick step triggered: ${step}`);
@@ -23,10 +45,9 @@ const SynthContainer = () => {
         }
       },
       kickPattern,
-      "8n"
+      "16n"
     ).start(0);
 
-    // Create a separate sequence for the snare
     const snareSeq = new Tone.Sequence(
       (time, step) => {
         console.log(`Snare step triggered: ${step}`);
@@ -35,13 +56,11 @@ const SynthContainer = () => {
         }
       },
       snarePattern,
-      "8n"
+      "16n"
     ).start(0);
 
-    // Set the BPM for the transport
-    Tone.Transport.bpm.value = 120;
+    Tone.Transport.bpm.value = BPM;
 
-    // Clean up both sequences and stop the transport when patterns change or component unmounts
     return () => {
       kickSeq.dispose();
       snareSeq.dispose();
@@ -49,24 +68,51 @@ const SynthContainer = () => {
     };
   }, [kickPattern, snarePattern]);
 
+  // Create a separate schedule to update activeStep visually.
+  useEffect(() => {
+    let index = 0;
+    const updateVisual = (time) => {
+      setActiveStep(index);
+      index = (index + 1) % kickPattern.length; // assuming both patterns have the same length
+    };
+
+    // Schedule this callback on every 8th note.
+    const visualId = Tone.Transport.scheduleRepeat(updateVisual, "16n");
+
+    return () => {
+      Tone.Transport.clear(visualId);
+    };
+  }, [kickPattern]);
+
   useEffect(() => {
     if (playing) {
-      // Start the transport if playing
-      Tone.start(); // Ensure the AudioContext is resumed
+      Tone.start(); // Ensure AudioContext is resumed
       Tone.Transport.start();
     } else {
-      // Stop the transport if not playing
       Tone.Transport.stop();
     }
   }, [playing]);
 
   return (
     <>
-      <Kick ref={kickRef} />
-      <Snare ref={snareRef} />
-
-      <Sequencer sequence={kickPattern} setSequence={setKickPattern} />
-      <Start playing={playing} setPlaying={setPlaying} />
+      <Grommet theme={custom}>
+        <SelectBPM bpm={BPM} setBPM={setBPM} />
+        <Sequencer
+          sequence={kickPattern}
+          setSequence={setKickPattern}
+          activeStep={activeStep}
+        />
+        <Sequencer
+          sequence={snarePattern}
+          setSequence={setSnarePattern}
+          activeStep={activeStep}
+        />
+        <Box direction="row">
+          <Kick ref={kickRef} />
+          <Snare ref={snareRef} />
+        </Box>
+        <Start playing={playing} setPlaying={setPlaying} />
+      </Grommet>
     </>
   );
 };

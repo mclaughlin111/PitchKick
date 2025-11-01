@@ -17,17 +17,17 @@ const Kick = React.forwardRef((props, ref) => {
   const [decay, setDecay] = useState(0.2);
 
   // Create the synth once using useRef so it isn't re-instantiated on every render.
-  const synthRef = useRef(new Tone.MembraneSynth().toDestination());
+  const synth = useRef(new Tone.MembraneSynth().toDestination());
 
   const playSynth = useCallback(
     (time) => {
       Tone.start(); // Ensure the AudioContext is resumed.
       console.log("kick triggered");
       // Trigger the synth using the scheduled time from Tone.js if available.
-      synthRef.current.triggerAttackRelease(pitch, length, time);
+      synth.current.triggerAttackRelease(pitch, length, time);
       // Optionally adjust synth settings:
-      synthRef.current.octaves = 8;
-      synthRef.current.pitchDecay = decay;
+      synth.current.octaves = 8;
+      synth.current.pitchDecay = decay;
     },
     [pitch, length, decay]
   );
