@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Kick from "../components/Kick";
 import Snare from "../components/Snare";
 import Sequencer from "../components/Sequencer";
@@ -6,40 +6,95 @@ import { Start } from "../components/Start";
 import * as Tone from "tone";
 import { Box, Grommet } from "grommet";
 import { SelectBPM } from "../components/SelectBPM";
+import { custom } from "../theme";
 
 const SynthContainer = () => {
   const [playing, setPlaying] = useState(false);
   const [BPM, setBPM] = useState(120);
-  const [kickPattern, setKickPattern] = useState([1, 0, 0, 0, 1, 0, 0, 0]);
-  const [snarePattern, setSnarePattern] = useState([0, 0, 0, 0, 0, 0, 0, 0]);
+  const [kickPattern, setKickPatternState] = useState([1, 0, 0, 0, 1, 0, 0, 0]);
+  const [snarePattern, setSnarePatternState] = useState([
+    0, 0, 0, 0, 1, 0, 0, 0,
+  ]);
   const [activeStep, setActiveStep] = useState(0);
 
   const kickRef = useRef(null);
   const snareRef = useRef(null);
+  const kickSeqRef = useRef(null);
+  const snareSeqRef = useRef(null);
 
-  const custom = {
-    checkBox: {
-      check: {
-        extend: `
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `,
-      },
-      icon: {
-        size: "10px", // Adjust size if needed
-      },
-      toggle: {
-        background: "none",
-      },
-    },
-  };
-
-  // Create Tone.Sequence for kick and snare as before.
   useEffect(() => {
-    const kickSeq = new Tone.Sequence(
+    Tone.Transport.bpm.value = BPM;
+  }, [BPM]);
+
+  useEffect(() => {
+    const handleStateChange = (state) => {
+      console.info(`[AudioContext] state=${state}`);
+    };
+
+    console.info(`[AudioContext] initial=${Tone.context.state}`);
+    Tone.context.on("statechange", handleStateChange);
+
+    const handleTransportStart = (time) => {
+      console.info(`[Transport] start time=${time}`);
+    };
+    const handleTransportStop = (time) => {
+      console.info(`[Transport] stop time=${time}`);
+    };
+    const handleTransportPause = (time) => {
+      console.info(`[Transport] pause time=${time}`);
+    };
+
+    Tone.Transport.on("start", handleTransportStart);
+    Tone.Transport.on("stop", handleTransportStop);
+    Tone.Transport.on("pause", handleTransportPause);
+
+    return () => {
+      Tone.context.off("statechange", handleStateChange);
+      Tone.Transport.off("start", handleTransportStart);
+      Tone.Transport.off("stop", handleTransportStop);
+      Tone.Transport.off("pause", handleTransportPause);
+    };
+  }, []);
+
+  useEffect(() => {
+    const resumeOnGesture = async () => {
+      if (Tone.context.state === "running") {
+        return;
+      }
+      try {
+        await Tone.start();
+      } catch (error) {
+        console.warn("AudioContext start was blocked:", error);
+      }
+    };
+
+    window.addEventListener("pointerdown", resumeOnGesture);
+    window.addEventListener("keydown", resumeOnGesture);
+
+    return () => {
+      window.removeEventListener("pointerdown", resumeOnGesture);
+      window.removeEventListener("keydown", resumeOnGesture);
+    };
+  }, []);
+
+  const setKickPattern = useCallback((newPattern) => {
+    setKickPatternState(newPattern);
+    if (kickSeqRef.current) {
+      kickSeqRef.current.events = newPattern;
+    }
+  }, []);
+
+  const setSnarePattern = useCallback((newPattern) => {
+    setSnarePatternState(newPattern);
+    if (snareSeqRef.current) {
+      snareSeqRef.current.events = newPattern;
+    }
+  }, []);
+
+  // Modified sequence creation effect
+  useEffect(() => {
+    kickSeqRef.current = new Tone.Sequence(
       (time, step) => {
-        console.log(`Kick step triggered: ${step}`);
         if (step === 1 && kickRef.current) {
           kickRef.current.playSynth(time);
         }
@@ -48,9 +103,8 @@ const SynthContainer = () => {
       "16n"
     ).start(0);
 
-    const snareSeq = new Tone.Sequence(
+    snareSeqRef.current = new Tone.Sequence(
       (time, step) => {
-        console.log(`Snare step triggered: ${step}`);
         if (step === 1 && snareRef.current) {
           snareRef.current.playSynth(time);
         }
@@ -59,59 +113,80 @@ const SynthContainer = () => {
       "16n"
     ).start(0);
 
-    Tone.Transport.bpm.value = BPM;
-
     return () => {
-      kickSeq.dispose();
-      snareSeq.dispose();
+      kickSeqRef.current?.dispose();
+      snareSeqRef.current?.dispose();
       Tone.Transport.stop();
     };
-  }, [kickPattern, snarePattern]);
+  }, [kickRef, snareRef]);
 
-  // Create a separate schedule to update activeStep visually.
   useEffect(() => {
     let index = 0;
     const updateVisual = (time) => {
-      setActiveStep(index);
-      index = (index + 1) % kickPattern.length; // assuming both patterns have the same length
+      const stepIndex = index;
+      index = (index + 1) % kickPattern.length;
+      Tone.Draw.schedule(() => {
+        setActiveStep(stepIndex);
+      }, time);
     };
 
-    // Schedule this callback on every 8th note.
+    // Schedule UI updates on the draw thread to avoid blocking audio scheduling.
     const visualId = Tone.Transport.scheduleRepeat(updateVisual, "16n");
 
     return () => {
       Tone.Transport.clear(visualId);
     };
-  }, [kickPattern]);
+  }, [kickPattern.length]);
 
-  useEffect(() => {
-    if (playing) {
-      Tone.start(); // Ensure AudioContext is resumed
-      Tone.Transport.start();
-    } else {
-      Tone.Transport.stop();
+  const handleStartStop = useCallback(async () => {
+    if (!playing) {
+      if (Tone.context.state !== "running") {
+        try {
+          await Tone.start();
+        } catch (error) {
+          console.warn("AudioContext start was blocked:", error);
+          return;
+        }
+      }
+      Tone.Transport.start("+0.05");
+      setPlaying(true);
+      return;
     }
-  }, [playing]);
 
+    Tone.Transport.stop();
+    setPlaying(false);
+    setActiveStep(0);
+  }, [playing]);
   return (
     <>
       <Grommet theme={custom}>
-        <SelectBPM bpm={BPM} setBPM={setBPM} />
+        <Box
+          flex={false}
+          direction="row"
+          pad="small"
+          align="center"
+          justify="left"
+          height="min-content"
+        >
+          <SelectBPM bpm={BPM} setBPM={setBPM} />
+          <Start playing={playing} onToggle={handleStartStop} />
+        </Box>
+        {/* 
         <Sequencer
           sequence={kickPattern}
           setSequence={setKickPattern}
           activeStep={activeStep}
-        />
+        /> */}
         <Sequencer
           sequence={snarePattern}
           setSequence={setSnarePattern}
           activeStep={activeStep}
         />
+
         <Box direction="row">
-          <Kick ref={kickRef} />
+          {/* <Kick ref={kickRef} /> */}
           <Snare ref={snareRef} />
         </Box>
-        <Start playing={playing} setPlaying={setPlaying} />
       </Grommet>
     </>
   );

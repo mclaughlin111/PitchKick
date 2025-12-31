@@ -5,11 +5,15 @@ import React from "react";
 export const SelectBPM = ({ bpm, setBPM }) => {
   return (
     <>
-      <Box flex="row" align="center" pad="xxsmall">
+      <Box direction="row" align="center" pad="xxsmall">
         <Button onClick={() => setBPM(bpm - 10)}>
           <FormPrevious />{" "}
         </Button>
-        <Text size="small" weight="normal">
+        <Text
+          style={{ transform: "translateY(-2px)" }}
+          size="small"
+          weight="normal"
+        >
           {bpm}
         </Text>
         <Button onClick={() => setBPM(bpm + 10)}>

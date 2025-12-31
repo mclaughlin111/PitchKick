@@ -1,15 +1,16 @@
-import { Button } from "grommet";
+import { Button, Box } from "grommet";
 
-export const Start = ({ playing, setPlaying }) => {
+export const Start = ({ playing, onToggle }) => {
   return (
-    <Button
-      margin={{ top: "medium" }}
-      plain
-      size="medium"
-      label={playing ? "Stop" : "Start"}
-      onClick={() => {
-        setPlaying(!playing);
-      }}
-    />
+    <Box margin="none" pad="none" align="end" height="min-content">
+      <Button
+        margin="none"
+        pad="none"
+        plain
+        size="medium"
+        label={playing ? "Stop" : "Start"}
+        onClick={onToggle}
+      />
+    </Box>
   );
 };

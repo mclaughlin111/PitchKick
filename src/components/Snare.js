@@ -11,7 +11,7 @@ import { Box, Button, Tip } from "grommet";
 
 const Snare = React.forwardRef((props, ref) => {
   const [isKeyPressed, setIsKeyPressed] = useState(false);
-  const [pitch, setPitch] = useState(100);
+  const [pitch, setPitch] = useState(20);
   const [decay, setDecay] = useState(0.1);
   const [noiseLevel, setNoiseLevel] = useState(0.5);
 
@@ -42,9 +42,24 @@ const Snare = React.forwardRef((props, ref) => {
     }).toDestination()
   );
 
+  const resumeAudio = useCallback(async () => {
+    if (Tone.context.state === "running") {
+      return true;
+    }
+    try {
+      await Tone.start();
+      return Tone.context.state === "running";
+    } catch (error) {
+      console.warn("AudioContext start was blocked:", error);
+      return false;
+    }
+  }, []);
+
   const playSynth = useCallback(
     (time) => {
-      Tone.start();
+      if (Tone.context.state !== "running") {
+        return;
+      }
 
       // Set the noise synth volume
       noiseRef.current.volume.value = Tone.gainToDb(noiseLevel);
@@ -53,12 +68,21 @@ const Snare = React.forwardRef((props, ref) => {
       membraneRef.current.envelope.decay = decay;
       noiseRef.current.envelope.decay = decay * 0.5;
 
-      // Trigger both synths
-      membraneRef.current.triggerAttackRelease(pitch, "8n", time);
-      noiseRef.current.triggerAttackRelease("8n", time);
+      // src/components/Snare.js (inside playSynth)
+      const stepSeconds = Tone.Time("16n").toSeconds();
+      membraneRef.current.triggerAttackRelease(pitch, stepSeconds * 0.9, time);
+      noiseRef.current.triggerAttackRelease(stepSeconds * 0.9, time);
     },
     [pitch, decay, noiseLevel]
   );
+
+  const triggerFromUI = useCallback(async () => {
+    const canPlay = await resumeAudio();
+    if (!canPlay) {
+      return;
+    }
+    playSynth();
+  }, [resumeAudio, playSynth]);
 
   useImperativeHandle(ref, () => ({
     playSynth,
@@ -68,7 +92,7 @@ const Snare = React.forwardRef((props, ref) => {
     const handleKeyDown = (event) => {
       if (event.code === "KeyS" && !isKeyPressed) {
         setIsKeyPressed(true);
-        playSynth();
+        triggerFromUI();
       }
     };
     const handleKeyUp = (event) => {
@@ -83,7 +107,7 @@ const Snare = React.forwardRef((props, ref) => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isKeyPressed, playSynth]);
+  }, [isKeyPressed, triggerFromUI]);
 
   return (
     <Box align="center" pad="medium" responsive>
@@ -93,12 +117,7 @@ const Snare = React.forwardRef((props, ref) => {
         plain
         pad="small"
       >
-        <Button
-          primary
-          label="Snare"
-          onClick={() => playSynth()}
-          size="small"
-        />
+        <Button primary label="Snare" onClick={triggerFromUI} size="small" />
       </Tip>
       <Slider
         parameter={pitch}
@@ -128,4 +147,4 @@ const Snare = React.forwardRef((props, ref) => {
   );
 });
 
-export default Snare;
+export default React.memo(Snare);

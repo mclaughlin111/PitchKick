@@ -9,8 +9,7 @@ const Slider = ({
   controlName,
 }) => {
   const handleSliderChange = (event) => {
-    console.log("slider at" + event);
-    setParameter(event.target.value);
+    setParameter(parseFloat(event.target.value));
   };
 
   return (

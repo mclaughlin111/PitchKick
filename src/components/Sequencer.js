@@ -1,35 +1,38 @@
-import { CheckBox, Box } from "grommet";
+import React, { useCallback } from "react";
 
 const Sequencer = ({ sequence, setSequence, activeStep }) => {
-  const handleChange = (idx, checked) => {
-    const newSequence = [...sequence];
-    newSequence[idx] = checked ? 1 : 0;
-    setSequence(newSequence);
-  };
+  const handleChange = useCallback(
+    (idx, checked) => {
+      const newSequence = [...sequence];
+      newSequence[idx] = checked ? 1 : 0;
+
+      requestAnimationFrame(() => {
+        setSequence(newSequence);
+      });
+    },
+    [sequence, setSequence]
+  );
 
   return (
-    <Box direction="row">
+    <div className="sequencer">
       {sequence.map((step, idx) => (
-        <div
-          key={idx}
+        <input
           style={
             idx === activeStep
               ? {
-                  backgroundColor: "white",
-                  scale: "0.9",
+                  backgroundColor: "grey",
+                  scale: "0.98",
                 }
               : {}
           }
-        >
-          <CheckBox
-            checked={step === 1}
-            onChange={(e) => handleChange(idx, e.target.checked)}
-            icon={"-"}
-          />
-        </div>
+          key={idx}
+          type="checkbox"
+          checked={step === 1}
+          onChange={(e) => handleChange(idx, e.target.checked)}
+        />
       ))}
-    </Box>
+    </div>
   );
 };
 
-export default Sequencer;
+export default React.memo(Sequencer);
