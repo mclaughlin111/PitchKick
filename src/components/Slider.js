@@ -7,6 +7,7 @@ const Slider = ({
   maxValue,
   stepValue,
   controlName,
+  compact = false,
 }) => {
   const handleSliderChange = (event) => {
     setParameter(parseFloat(event.target.value));
@@ -14,30 +15,39 @@ const Slider = ({
 
   return (
     <Box
-      align="left"
+      align="center"
+      className={compact ? "slider-row slider-row-compact" : "slider-row"}
       direction="row"
-      margin={{ bottom: "small", top: "medium" }}
-      responsive
+      margin={{ bottom: "xxsmall", top: "xsmall" }}
+      responsive={false}
     >
-      <Text margin={{ right: "small" }}>{controlName}</Text>
+      <Text className="slider-label" margin={{ right: "xsmall" }} size="xsmall">
+        {controlName}
+      </Text>
       <div className="parameter">
-        <Text weight={300} margin={{ right: "small" }}>
+        <Text margin={{ right: "xsmall" }} size="xsmall" weight={300}>
           {parameter}
         </Text>
       </div>
 
       <RangeInput
+        className="slider-input"
         string={"control"}
-        title="Set Kick Pitch"
+        title={`Set ${controlName}`}
         min={minValue}
         max={maxValue}
         step={stepValue}
         value={parameter}
         color={"#FFF"}
         onChange={handleSliderChange}
-        margin={{ right: "small" }} // Constant right margin for the slider
+        margin={{ right: "xsmall" }}
       />
-      <Text weight={300} margin={{ left: "small" }}>
+      <Text
+        className="slider-max"
+        margin={{ left: "xsmall" }}
+        size="xsmall"
+        weight={300}
+      >
         {maxValue}
       </Text>
     </Box>

@@ -11,18 +11,19 @@ import { Box, Button, Tip } from "grommet";
 
 const gainToDb = (gain) => (gain <= 0 ? -Infinity : Tone.gainToDb(gain));
 
-const Snare = React.forwardRef((props, ref) => {
+const HiHat = React.forwardRef((props, ref) => {
   const [isKeyPressed, setIsKeyPressed] = useState(false);
-  const [pitch, setPitch] = useState(20);
-  const [decay, setDecay] = useState(0.1);
-  const [noiseLevel, setNoiseLevel] = useState(0.5);
-  const [level, setLevel] = useState(0.85);
+  const [pitch, setPitch] = useState(6500);
+  const [decay, setDecay] = useState(0.08);
+  const [metallicness, setMetallicness] = useState(0.55);
+  const [level, setLevel] = useState(0.75);
 
-  const membraneRef = useRef(null);
   const noiseRef = useRef(null);
+  const filterRef = useRef(null);
+  const metalRef = useRef(null);
 
   const prepareSynth = useCallback(() => {
-    if (membraneRef.current && noiseRef.current) {
+    if (noiseRef.current && filterRef.current && metalRef.current) {
       return true;
     }
 
@@ -30,15 +31,10 @@ const Snare = React.forwardRef((props, ref) => {
       return false;
     }
 
-    membraneRef.current = new Tone.MembraneSynth({
-      pitchDecay: 0.05,
-      octaves: 10,
-      oscillator: { type: "sine" },
-      envelope: {
-        attack: 0.001,
-        decay: 0.2,
-        sustain: 0,
-      },
+    filterRef.current = new Tone.Filter({
+      frequency: pitch,
+      type: "highpass",
+      Q: 1,
     }).toDestination();
 
     noiseRef.current = new Tone.NoiseSynth({
@@ -46,21 +42,36 @@ const Snare = React.forwardRef((props, ref) => {
         type: "white",
       },
       envelope: {
-        attack: 0.005,
-        decay: 0.1,
+        attack: 0.001,
+        decay,
         sustain: 0,
+        release: 0.01,
       },
+    }).connect(filterRef.current);
+
+    metalRef.current = new Tone.MetalSynth({
+      envelope: {
+        attack: 0.001,
+        decay,
+        release: 0.01,
+      },
+      harmonicity: 4,
+      modulationIndex: 24,
+      resonance: pitch,
+      octaves: 1.2,
     }).toDestination();
 
     return true;
-  }, []);
+  }, [decay, pitch]);
 
   useEffect(() => {
     return () => {
-      membraneRef.current?.dispose();
       noiseRef.current?.dispose();
-      membraneRef.current = null;
+      filterRef.current?.dispose();
+      metalRef.current?.dispose();
       noiseRef.current = null;
+      filterRef.current = null;
+      metalRef.current = null;
     };
   }, []);
 
@@ -83,17 +94,29 @@ const Snare = React.forwardRef((props, ref) => {
         return;
       }
 
+      const metalAmount = Math.min(Math.max(metallicness, 0), 1);
       const levelAmount = Math.min(Math.max(level, 0), 1);
-      noiseRef.current.volume.value = gainToDb(levelAmount * noiseLevel);
-      membraneRef.current.volume.value = gainToDb(levelAmount * 0.85);
-      membraneRef.current.envelope.decay = decay;
-      noiseRef.current.envelope.decay = decay * 0.5;
+      const duration = Math.max(0.01, decay);
 
-      const stepSeconds = Tone.Time("16n").toSeconds();
-      membraneRef.current.triggerAttackRelease(pitch, stepSeconds * 0.9, time);
-      noiseRef.current.triggerAttackRelease(stepSeconds * 0.9, time);
+      filterRef.current.frequency.value = pitch;
+      noiseRef.current.envelope.decay = duration;
+      noiseRef.current.volume.value = gainToDb(
+        levelAmount * (0.75 - metalAmount * 0.35),
+      );
+
+      metalRef.current.envelope.decay = duration * 0.85;
+      metalRef.current.harmonicity = 2 + metalAmount * 7;
+      metalRef.current.modulationIndex = 12 + metalAmount * 70;
+      metalRef.current.resonance = 1800 + metalAmount * 4800;
+      metalRef.current.octaves = 0.8 + metalAmount * 2.6;
+      metalRef.current.volume.value = gainToDb(
+        levelAmount * (0.08 + metalAmount * 0.7),
+      );
+
+      noiseRef.current.triggerAttackRelease(duration, time);
+      metalRef.current.triggerAttackRelease(pitch, duration, time, metalAmount);
     },
-    [pitch, decay, noiseLevel, level, prepareSynth]
+    [decay, metallicness, level, pitch, prepareSynth],
   );
 
   const triggerFromUI = useCallback(async () => {
@@ -115,13 +138,13 @@ const Snare = React.forwardRef((props, ref) => {
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.code === "KeyS" && !isKeyPressed) {
+      if (event.code === "KeyD" && !isKeyPressed) {
         setIsKeyPressed(true);
         triggerFromUI();
       }
     };
     const handleKeyUp = (event) => {
-      if (event.code === "KeyS") {
+      if (event.code === "KeyD") {
         setIsKeyPressed(false);
       }
     };
@@ -143,13 +166,13 @@ const Snare = React.forwardRef((props, ref) => {
     >
       <Tip
         dropProps={{ align: { left: "right" } }}
-        content={"Trigger with S"}
+        content={"Trigger with D"}
         plain
         pad="small"
       >
         <Button
           className="instrument-trigger"
-          label="Snare"
+          label="Hi-hat"
           onClick={triggerFromUI}
           primary
           size="small"
@@ -158,26 +181,26 @@ const Snare = React.forwardRef((props, ref) => {
       <Slider
         parameter={pitch}
         setParameter={setPitch}
-        minValue={10}
-        maxValue={100}
-        stepValue={1}
+        minValue={1000}
+        maxValue={9000}
+        stepValue={100}
         controlName="Pitch"
       />
       <Slider
         parameter={decay}
         setParameter={setDecay}
         minValue={0.01}
-        maxValue={0.5}
+        maxValue={0.3}
         stepValue={0.01}
         controlName="Decay"
       />
       <Slider
-        parameter={noiseLevel}
-        setParameter={setNoiseLevel}
+        parameter={metallicness}
+        setParameter={setMetallicness}
         minValue={0}
         maxValue={1}
         stepValue={0.01}
-        controlName="Noise Level"
+        controlName="Metallic"
       />
       <Slider
         compact
@@ -192,4 +215,4 @@ const Snare = React.forwardRef((props, ref) => {
   );
 });
 
-export default React.memo(Snare);
+export default React.memo(HiHat);

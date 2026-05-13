@@ -1,8 +1,24 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render, screen } from "@testing-library/react";
+import App from "./App";
 
-test('renders learn react link', () => {
+jest.mock("tone", () => ({
+  Transport: {
+    bpm: { value: 120 },
+    on: jest.fn(),
+    off: jest.fn(),
+    start: jest.fn(),
+    stop: jest.fn(),
+  },
+  context: {
+    state: "suspended",
+    on: jest.fn(),
+    off: jest.fn(),
+  },
+  start: jest.fn(() => Promise.resolve()),
+}));
+
+test("renders synth controls", () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText(/pitch-seq/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /start/i })).toBeInTheDocument();
 });
